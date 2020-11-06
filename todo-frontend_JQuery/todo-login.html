@@ -1,0 +1,109 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Add</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+    <script src="myscripts.js"></script>
+</head>
+<body>
+    
+<script>
+    
+    
+    
+$(document).ready(function(){
+    $("#login").click(function() {
+        
+       var username = $('#username').val();
+		var password = $('#password').val();
+
+    $.ajax({
+            url: "/todoapi/users/login",
+            type: "POST",
+            dataType: "json",
+            contentType: "application/json",
+            headers: {
+                    Authorization: "Basic " + btoa(username + ":" + password)
+            },
+            statusCode: {
+            200: function(response) {
+                console.log("Login Succesful");
+                $("#page-message").html("Login Successful");
+                localStorage.setItem("token", response.token);
+                window.location.assign("todo-list.html");
+            
+            },
+
+            401: function(response) {
+                let message = response.responseJSON.message;
+                $("#page-message").html(message);
+            },
+            404: function(jqXHR, textStatus, errorThrown) {
+                $("#page-message").html("Error:" + textStatus);
+                consule.log(errorThrown);
+                console.log("error " + textStatus);
+                console.log("incoming Text " + jqXHR.responseText);
+	        }
+        }
+      })
+
+	   
+	   
+  
+    });
+
+})
+
+
+
+function getUser() {
+        $.ajax({
+                url: '/todoapi/users/',
+                type: 'GET',
+                success: (function(data) {
+                    console.log('GET success ');
+                    var user = JSON.parse(this.responseText).user;
+                    document.getElementById("listName").value = user.username; 
+                    
+                }),
+                fail: (function(jqXHR, textStatus, errorThrown) {
+                    console.log('GET error ' + textStatus);
+                    console.log('incoming Text ' + jqXHR.responseText);
+                })
+            });
+
+    }
+
+
+    $(document).ready(function(){
+    $("#back").click(function() {
+        
+		window.location.assign('todo-list.html')
+	   
+	   
+  
+        });
+
+    })
+    
+</script>
+
+<h2>List add</h2>
+<p id="debug"></p>
+<div class="block-center">
+    <p><span id="page-message">Enter fields and click Save</span></p>
+    <p><span class="error-head">* required field.</span></p>
+    <p> Username: 
+    <input type="text" id="username">
+    <br>
+    Password: 
+    <input type="text" id="password">
+    <br>
+    <button id="login">Login</button>
+    <button id="back">Lists</button>
+    </p>
+</div>
+</body>
+</html>

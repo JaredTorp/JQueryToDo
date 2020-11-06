@@ -1,0 +1,222 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Todo app List</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="myscripts.js"></script>
+
+</head>
+<body>
+    
+
+
+<script>
+  
+    var token = localStorage.getItem("token");
+    if (token != "" && token != null) {
+	var authheader = JSON.parse(
+		'{"Authorization" : "Bearer ' + token + '"}'
+        
+	);
+    } else {
+	var authheader = "";
+    }
+
+
+
+    
+    document.onreadystatechange = function() {
+       
+       getUser();
+       createTable();
+
+       //i wanted to help and change the buttons here
+       if(authheader == "")
+       {
+           
+       }
+       else 
+       {
+           
+       }
+          
+       };
+    function selectChange() {
+        id = getId();
+        document.getElementById('selectedID').innerHTML = id;
+        document.getElementById('updateID').value = id;
+        document.getElementById('deleteID').value = id;
+    }
+
+    function getId() {
+        var theLists = document.getElementsByName('selectedRow');
+        var i = theLists.length;
+        while(i--) {
+            if(theLists[i].checked)
+                return theLists[i].value;
+        }
+    }
+
+
+    function createTable() {
+        $.ajax({
+                url: '/todoapi/lists/',
+                type: 'GET',
+                dataType: "json",
+                contentType: "application/json",
+
+                headers: authheader,
+                success: (function(response){
+                    var tableHTML = '<tr><th width= "50px">ID</th><th width= "100px">todo Lists</th><th width= "100px">Actions</th></tr>';
+                $.each(response.lists, function(i, list) {
+                    tableHTML += '<tr><td>' + list.id + '</td><td>' + '<a href= "todo-update.html?id='+list.id+ '">' + list.name + " </a>" + '</td><td> <button onclick = "deleteFunc('+ list.id +')" data-arg= ' + list.id + '>Delete</button>  </td></tr>' ;
+                });
+                $('#todo-list-table').html(tableHTML);
+
+                }),
+                fail:(function(jqXHR, textStatus, errorThrown) {
+                console.log('error ' + textStatus);
+                console.log('incoming Text ' + jqXHR.responseText);
+                })
+            })
+    }
+
+
+ 
+    function deleteFunc(id)
+    {
+        
+        console.log("the delete button was pressed")
+           
+
+         $.ajax({
+                url: '/todoapi/lists/' + id,
+                type: 'DELETE',
+                success: (function(data) {
+                    console.log('Delete success ');
+                    window.location.assign('todo-list.html');
+                }),
+                fail: (function(jqXHR, textStatus, errorThrown) {
+                    console.log('Delete error ' + textStatus);
+                    console.log('incoming Text ' + jqXHR.responseText);
+                })
+            })
+    }
+
+
+
+    function getUser() {
+        $.ajax({
+                url: '/todoapi/users/',
+                type: 'GET',
+                headers: authheader,
+                success: (function(data) {
+                    $("#user").html( "Hello, " + data.user.firstName); 
+                    
+                }),
+                fail: (function(jqXHR, textStatus, errorThrown) {
+                    console.log('GET error ' + textStatus);
+                    console.log('incoming Text ' + jqXHR.responseText);
+                })
+            });
+
+    }
+
+    $(document).ready(function(){
+    $("#logout").click(function() {
+        //logout code
+        console.log("this is the logout function");
+        
+        $.ajax({
+                url: "/todoapi/users/logout",
+                type: "POST",
+                dataType: "json",
+                contentType: "application/json",
+                headers: authheader,
+                statusCode: {
+                200: function(response) {
+                    console.log("Login Succesful");
+                    $("#page-message").html("Login Successful");
+                    // localStorage.setItem("token", response.token);
+                    localStorage.setItem("token", "");
+                    window.location.assign("todo-list.html");
+                
+                },
+
+                401: function(response) {
+                    let message = response.responseJSON.message;
+                    $("#page-message").html(message);
+                },
+                404: function(jqXHR, textStatus, errorThrown) {
+                    $("#page-message").html("Error:" + textStatus);
+                    consule.log(errorThrown);
+                    console.log("error " + textStatus);
+                    console.log("incoming Text " + jqXHR.responseText);
+                }
+            }
+        })
+    });
+
+})
+
+$(document).ready(function(){
+    $("#login").click(function() {
+        
+		window.location.assign('todo-login.html');
+	   
+	   
+  
+        });
+
+    })
+
+$(document).ready(function(){
+    $("#addUser").click(function() {
+        
+		window.location.assign('todo-addUser.html');
+	   
+	   
+  
+        });
+
+    })
+
+    $(document).ready(function(){
+    $("#add").click(function() {
+        
+		window.location.assign('todo-add.html');
+	   
+	   
+  
+        });
+
+    })
+
+</script>
+
+<h2>Todo List</h2>
+<center>
+<p id="user"></p>     <!-- this is where we greet the user and prompt to logout -->
+</center>
+
+<div class="block-center">
+    <div id="todo-table">
+        <table class="center" id="todo-list-table">
+        </table>
+    </div>
+    <br><br>
+    <p id="selectedID"></p>
+    
+    <p id="usernameField"></p>
+
+    
+
+    <button id="add">Add</button>
+    <button id="login">Login</button>
+    <button id = "logout">Logout</button> <!-- Write this function later -->
+    <button id="addUser">Add User</button>
+</div>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Add</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+    <script src="myscripts.js"></script>
+</head>
+<body>
+<script>
+    
+    var token = localStorage.getItem("token");
+    if (token != "" && token != null) {
+	var authheader = JSON.parse(
+		'{"Authorization" : "Bearer ' + token + '"}'
+	);
+    } else {
+	var authheader = "";
+    }
+
+    console.log(token);
+
+
+ $(document).ready(function(){
+    $("#listAdd").click(function() {
+       var name = $('#listName').val();
+
+            $.ajax({
+                url: '/todoapi/lists/',
+                type: 'POST',
+                dataType: 'json',
+                contentType: 'application/json',
+                headers: authheader,
+                data: JSON.stringify({
+                    name: name
+                }),
+                statusCode: {
+                    201: function(response) {
+                        $('#page-message').html('Record Added');
+                        window.location.assign('todo-list.html');
+                    },
+                    406: function(response) {
+                        var errors = response.responseJSON;
+                        $('.error').html('*');
+                        $.each(errors, function(i, message) {
+                            $('#' + message.attributeName + 'Err').html(message.message);
+                            console.log('Error ' + message.attributeName + ' ' + message.message);
+                        });
+                        $('#page-message').html('Fix errors and click Save');
+                    },
+                    404: function(jqXHR, textStatus, errorThrown) {
+                        $('#page-message').html('Error:' + textStatus);
+                        console.log(errorThrown);
+                        console.log('error ' + textStatus);
+                        console.log('incoming Text ' + jqXHR.responseText);
+                    }
+                }
+            });
+	  
+    });
+
+})
+
+$(document).ready(function(){
+    $("#lists").click(function() {
+        
+		window.location.assign('todo-list.html')
+	   
+	   
+  
+        });
+
+    })
+</script>
+
+<h2>List add</h2>
+<p id="debug"></p>
+<div class="block-center">
+    <p><span id="page-message">Enter fields and click Save</span></p>
+    <p><span class="error-head">* required field.</span></p>
+    <p>List Name: 
+    <input type="text" id="listName">
+    <button id = 'listAdd'>Add</button>
+    <button id="lists">Lists</button>
+    </p>
+</div>
+</body>
+</html>

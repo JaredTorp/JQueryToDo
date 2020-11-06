@@ -1,0 +1,324 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ToDo Update</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+    <script src="myscripts.js"></script>
+
+</head>
+<body>
+<script>
+    
+    var token = localStorage.getItem("token");
+    if (token != "" && token != null) {
+	var authheader = JSON.parse(
+		'{"Authorization" : "Bearer ' + token + '"}'
+	);
+    } else {
+	var authheader = "";
+    }
+
+
+
+
+    //this functions gets the id from the url!
+    function urlParam(name) {
+        var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+        if(results == null) {
+            return null;
+        } else {
+            return results[1] || 0;
+        }
+    }
+
+    var id=urlParam("id")
+  
+    function getRecord() {
+        $.ajax({
+                url: '/todoapi/lists/' + urlParam("id") ,
+                type: 'GET',
+                headers: authheader,
+                success: (function(response) {
+                    console.log('GET success ');
+                    console.log(response);
+                    var list = response.list;
+                    $('#listName').val(list.name);
+                    
+                    
+                }),
+                fail: (function(jqXHR, textStatus, errorThrown) {
+                    console.log('GET error ' + textStatus);
+                    console.log('incoming Text ' + jqXHR.responseText);
+                })
+            });
+
+    }
+
+    
+
+    
+    function createTable() {
+        $.ajax({
+                url: '/todoapi/lists/' + urlParam("id") + '/items/',
+                type: 'GET',
+                headers: authheader,
+                success: (function(response){
+                    var tableHTML = '<tr><th width= "100px">Complete</th><th width= "200px">Name</th><th width= "200px">Description</th><th width= "200px">State</th><th width= "200px">Action</th></tr>';
+                $.each(response.items, function(i, items) {
+                    tableHTML += '<tr><td> <input type="checkbox" id="myCheck'+ items.id + '" onclick="isChecked('+ items.id +')">  </td> <td> <input type="text" id="itemName'+ items.id +'"  value="' + items.name + '"> </td> <td> <input type="text" id="itemDescription'+ items.id +'" value="' + items.description +'"> </td>  <td> <input type="text" id="status'+ items.id +'" value="' + items.state +'"> </td><td> <button class = "button" onclick=saveRecord('+items.id +');>Save</button>  <button class = "button" onclick=deleteListItem('+ items.id +');>Delete</button>  </td></tr>' ;
+                });
+				tableHTML += '<tr><td>' + '<input type="checkbox" id="myCheckNew" onclick="isChecked()">  </td> <td> <input type="text" id="newItemName" value=""> </td>    <td> <input type="text" id="newItemDescription"></td>   <td> <input type="text" id="newStatus">  </td> <td> <button class = "button" onclick="addItem()";>Add</button>  </td></tr>' ;
+                $('#update-list-table').html(tableHTML);
+
+                }),
+                fail:(function(jqXHR, textStatus, errorThrown) {
+                console.log('error ' + textStatus);
+                console.log('incoming Text ' + jqXHR.responseText);
+                })
+            })
+    }
+
+
+    //CHANGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //this function deletes the entire list 
+$(document).ready(function(){
+    $("#deleteList").click(function() {
+        
+		  $.ajax({
+                url: '/todoapi/lists/' + urlParam("id"),
+                type: 'DELETE',
+                headers: authheader,
+                success: (function(data) {
+                    console.log('Delete success ');
+                    window.location.assign('todo-list.html');
+                }),
+                fail: (function(jqXHR, textStatus, errorThrown) {
+                    console.log('Delete error ' + textStatus);
+                    console.log('incoming Text ' + jqXHR.responseText);
+                })
+            });
+		
+             
+	   
+  
+    });
+
+})
+
+    
+     // i want to delete a single list record
+     function deleteListItem(id) {
+        $.ajax({
+                url: '/todoapi/lists/' + urlParam("id") + "/items/" +id,
+                type: 'DELETE',
+                headers: authheader,
+                success: (function(data) {
+                    console.log('Delete success ');
+                    createTable();
+                }),
+                fail: (function(jqXHR, textStatus, errorThrown) {
+                    console.log('Delete error ' + textStatus);
+                    console.log('incoming Text ' + jqXHR.responseText);
+                })
+            });
+
+     }
+
+
+    
+    //this function saves the specific list item
+    function saveRecord(id){
+        var name = document.getElementById('itemName' + id).value;
+        var description = document.getElementById('itemDescription' + id).value;
+        var status = document.getElementById('status' + id).value;
+
+            $.ajax({
+               url: '/todoapi/lists/' + urlParam("id") + "/items/" + id,
+               type: 'PUT',
+               dataType: 'json',
+               contentType: 'application/json',
+               headers: authheader,
+               
+               data: JSON.stringify({
+                name : name,
+                description : description,
+                state : status
+             }),
+            statusCode: {
+               201: function(response) {
+                $('#page-message').html('Record Added');
+                
+                 },
+                 406: function(response) {
+                var errors = response.responseJSON;
+                 $('.error').html('*');
+                 $.each(errors, function(i, message) {
+                      $('#' + message.attributeName + 'Err').html(message.message);
+                      console.log('Error ' + message.attributeName + ' ' + message.message);
+                  });
+                  $('#page-message').html('Fix errors and click Save');
+              },
+                    404: function(jqXHR, textStatus, errorThrown) {
+                    $('#page-message').html('Error:' + textStatus);
+                   console.log(errorThrown);
+                  console.log('error ' + textStatus);
+                  console.log('incoming Text ' + jqXHR.responseText);
+        }
+    }
+});
+    }
+
+
+    //i can do this one
+    //this function adds an item to the list 
+   
+   
+ function addItem()
+    {
+        
+        var name = $('#newItemName').val();
+        var description = $('#newItemDescription').val();
+        var status = $('#newStatus').val();
+
+        $.ajax({
+        url: '/todoapi/lists/' + urlParam("id") + "/items/",
+        type: 'POST',
+        dataType: 'json',
+        contentType: 'application/json',
+        headers: authheader,
+
+        data: JSON.stringify({
+        name: name,
+        description: description,
+        state: status
+        }),
+
+        statusCode: {
+        201: function(response) {
+         $('#page-message').html('Record Added');
+         createTable();
+            },
+            406: function(response) {
+            var errors = response.responseJSON;
+            $('.error').html('*');
+            $.each(errors, function(i, message) {
+            $('#' + message.attributeName + 'Err').html(message.message);
+            console.log('Error ' + message.attributeName + ' ' + message.message);
+            });
+        $('#page-message').html('Fix errors and click Save');
+        },
+            404: function(jqXHR, textStatus, errorThrown) {
+                $('#page-message').html('Error:' + textStatus);
+            console.log(errorThrown);
+                console.log('error ' + textStatus);
+            console.log('incoming Text ' + jqXHR.responseText);
+        }
+    }
+        });
+    }
+
+    //i can do this one
+    //this function updates the name of the list
+$(document).ready(function(){
+    $("#updateList").click(function() {
+        
+		var name = $('#listName').val();
+
+            $.ajax({
+                url: '/todoapi/lists/' + id,
+                type: 'PUT',
+                dataType: 'json',
+                contentType: 'application/json',
+                headers: authheader,
+                data: JSON.stringify({
+                    name: name
+                }),
+                statusCode: {
+                    201: function(response) {
+                        $('#page-message').html('Record Added');
+                        
+                    },
+                    406: function(response) {
+                        var errors = response.responseJSON;
+                        $('.error').html('*');
+                        $.each(errors, function(i, message) {
+                            $('#' + message.attributeName + 'Err').html(message.message);
+                            console.log('Error ' + message.attributeName + ' ' + message.message);
+                        });
+                        $('#page-message').html('Fix errors and click Save');
+                    },
+                    404: function(jqXHR, textStatus, errorThrown) {
+                        $('#page-message').html('Error:' + textStatus);
+                        console.log(errorThrown);
+                        console.log('error ' + textStatus);
+                        console.log('incoming Text ' + jqXHR.responseText);
+                    }
+                }
+            });
+	   
+  
+    });
+
+})
+
+    
+
+    //this gets the list and creates the table
+    $( document ).ready(function() {
+    console.log( "ready!" );
+        getRecord();
+        createTable();
+    });
+
+
+
+
+      
+         //this function updates the text field when the check mark is checked
+       function isChecked(id) {
+         var checkBox = document.getElementById("myCheck" + id);
+       if (checkBox.checked == true){
+             document.getElementById('status' + id).value = "complete";
+         } else {
+            document.getElementById('status' + id).value = "in-progress";
+    }
+   }
+
+
+   $(document).ready(function(){
+    $("#lists").click(function() {
+        
+		window.location.assign('todo-list.html')
+	   
+	   
+  
+        });
+
+    })
+
+</script>
+
+<h2>ToDo Update</h2>
+<p id="debug"></p>
+<div class="block-center">
+    <p><span class="error-head">* required field.</span></p>
+    <p><span id="page-message">Enter fields and click Save</span></p>
+    
+        Name: <input type="text" id="listName">
+        <span id="idNumberErr" class="error">* </span>
+        <!--our three buttons -->
+        <button id= "updateList">Update</button> <!--i want this button to update the list-->
+        <button id="deleteList">Delete</button> <!-- i want this button to delete the entry, call the delete entry function -->
+        <button id="lists">Lists</button>
+    
+    <div id="update-table">
+        <table class="center" id="update-list-table">
+        </table>
+    </div>
+
+
+</div>
+</body>
+</html>
